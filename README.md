@@ -44,3 +44,4 @@ Edit the `hitCreation` fields in `config.json`. Use `script/create_hit.py` to cr
 ### Screenshots
 Here's a demo of the task interface:
 ![demo](demo.gif)
+# image-attention
