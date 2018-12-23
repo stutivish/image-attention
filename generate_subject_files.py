@@ -11,21 +11,22 @@ import base64
 path = './all_images'
 files = os.listdir(path)
 
-random.shuffle(files)
+random.shuffle(files) # shuffle all images randomly at start 
 
 sentinel_path = './sentinel_images'
 sentinel_codechart_path = './codecharts/sentinel'
 sentinel_codecharts = os.listdir(sentinel_codechart_path)
 
 all_buckets = []
-img_count = 0
+img_count = 0 # keeps track of the number of codecharts being produced 
 num_buckets = 8
-num_subject_files = 100
-num_images_per_sf = 20
+num_subject_files = 100 # 100 subject files/ bucket
+num_images_per_sf = 20 # 2o images/ subject file
 images_per_bucket = int(len(files)/num_buckets)
 for i in range(0, len(files), images_per_bucket): 
 	all_buckets.append(files[i:i+images_per_bucket])
 
+# Images corresponding to each bucket
 bucket1 = all_buckets[0]
 bucket2 = all_buckets[1]
 bucket3 = all_buckets[2]
@@ -35,6 +36,7 @@ bucket6 = all_buckets[5]
 bucket7 = all_buckets[6]
 bucket8 = all_buckets[7]
 
+# Sentinel images corresponding to each bucket 
 sentinel_bucket1 = os.listdir('./sentinel_images/bucket1')
 sentinel_bucket2 = os.listdir('./sentinel_images/bucket2')
 sentinel_bucket3 = os.listdir('./sentinel_images/bucket3')
@@ -45,13 +47,14 @@ sentinel_bucket7 = os.listdir('./sentinel_images/bucket7')
 sentinel_bucket8 = os.listdir('./sentinel_images/bucket8')
 all_sentinel_buckets = [sentinel_bucket1, sentinel_bucket2, sentinel_bucket3, sentinel_bucket4, sentinel_bucket5, sentinel_bucket6, sentinel_bucket7, sentinel_bucket8]
 
-sentinel_img_to_num_dict = {}
-sentinel_num_to_img_dict = {}
-sentinel_cc_dict = {}
-sentinel_dict = {}
-num_to_bucket_dict = {}
+# Dictionaries to help keep mappings between images + codecharts for sentinel images organized
+sentinel_img_to_num_dict = {} # maps image to its number {"img_path: 4"}
+sentinel_num_to_img_dict = {} # maps number to its image {"4: img_path"}
+sentinel_cc_dict = {} # maps number to codechart {"4: codechart_path"}
+sentinel_dict = {} # maps image to its codechart {"img_path: codechart_path"}
+num_to_bucket_dict = {} # maps each number to its bucket {"1: bucket1...4: bucket1, 5: bucket2,..."}
 
-all_sentinel_images = []
+all_sentinel_images = [] # a list of lists (all sentinel buckets as elements)
 all_sentinel_images.extend(sentinel_bucket1)
 all_sentinel_images.extend(sentinel_bucket2)
 all_sentinel_images.extend(sentinel_bucket3)
@@ -61,9 +64,10 @@ all_sentinel_images.extend(sentinel_bucket6)
 all_sentinel_images.extend(sentinel_bucket7)
 all_sentinel_images.extend(sentinel_bucket8)
 
+# assigns each number to its bucket (32 sentinel images total)
 for i in range(1, 33): 
 	bucket = ''
-	if i>=1 and i<=4: 
+	if i>=1 and i<=4: # sentinel images 1-4 correspond to bucket1
 		bucket = 'bucket1'
 	elif i>=5 and i<=8: 
 		bucket = 'bucket2'
@@ -100,8 +104,9 @@ for si in all_sentinel_images:
 	bucket = num_to_bucket_dict[num]
 	sentinel_dict[sentinel_path + '/' + bucket + '/' + si] = sentinel_codechart_path + '/' + scc
 
+# loads the valid codes for the sentinel images 
 with open('./sentinel_images/sentinel_codes.json') as f:
-    sentinel_codes_data = json.load(f)
+    sentinel_codes_data = json.load(f) # contains mapping of sentinel image path to (valid triplet code, coordinate of valid triplet code)
 
 # Inserting sentinel images at "random" indices (~4-5 images apart) within the subject file 
 def index_jitter(): 
@@ -111,29 +116,32 @@ def index_jitter():
 		indices[i] = indices[i] + jitter
 	return indices
 
+
+## GENERATING SUBJECT FILES 
+# iterate over all buckets 
 for num in range(len(all_buckets)): 
 	bucket = all_buckets[num]
 	sentinel_bucket = all_sentinel_buckets[num]
 	bucket_name = 'bucket' + str(num+1)
-	# 1 bucket, 100 sf
+	# for each bucket, generate 100 subject files 
 	for i in range(num_subject_files): 
 		random.shuffle(bucket)
-		# 1 sf, 20 real images per
+		# for each subject files, add 20 real images 
 		sf_data = []
 		full_sf_data = []
 		for j in range(num_images_per_sf): 
 			img_count += 1
 			image_data = {}
-			full_image_data = {}
-			image_data["image"] = path + '/' + bucket[j]
+			full_image_data = {} # identical to image_data but includes a key for coordinates
+			image_data["image"] = path + '/' + bucket[j] # stores image path 
 			full_image_data["image"] = path + '/' + bucket[j]
 			# generate code chart
 			filename, valid_codes, coordinates = generate_code.create_codechart('/code_chart_' + str(img_count))
-			image_data["codechart"] =  filename
+			image_data["codechart"] =  filename # stores codechart path 
 			full_image_data["codechart"] =  filename
-			image_data["codes"] = valid_codes
+			image_data["codes"] = valid_codes # stores valid codes 
 			full_image_data["codes"] = valid_codes
-			image_data["flag"] = 'real'
+			image_data["flag"] = 'real' # stores flag of whether we have real or sentinel image
 			full_image_data["flag"] = 'real'
 			# store locations - (x, y) coordinate of each triplet 
 			# 2 different versions of subject files 
@@ -145,19 +153,19 @@ for num in range(len(all_buckets)):
 		sentinel_indices = index_jitter() 
 		for index in range(len(sentinel_indices)): 
 			sentinel_image_data = {}
-			full_sentinel_image_data = {}
+			full_sentinel_image_data = {} # identical to sentinel_image_data but includes coordinate key 
 			sentinel_file = sentinel_bucket[index]
-			file_number = sentinel_file[sentinel_file.index('image_')+6:sentinel_file.index('.jpg')]
+			file_number = sentinel_file[sentinel_file.index('image_')+6:sentinel_file.index('.jpg')] # extracts which sentinel image we're dealing with (i.e. image1, image2, image3...)
 			sentinel_image_path = sentinel_num_to_img_dict[file_number]
-			sentinel_image_data["image"] = sentinel_image_path
+			sentinel_image_data["image"] = sentinel_image_path # stores image path 
 			full_sentinel_image_data["image"] = sentinel_image_path
-			sentinel_image_data["codechart"] = sentinel_dict[sentinel_image_path]
+			sentinel_image_data["codechart"] = sentinel_dict[sentinel_image_path] # stores codechart path 
 			full_sentinel_image_data["codechart"] = sentinel_dict[sentinel_image_path]
-			sentinel_image_data["codes"] = sentinel_codes_data[sentinel_image_path][0]
+			sentinel_image_data["codes"] = sentinel_codes_data[sentinel_image_path][0] # stores the valid code that must be entered for sentinel image
 			full_sentinel_image_data["codes"] = sentinel_codes_data[sentinel_image_path][0]
-			sentinel_image_data["flag"] = 'sentinel'
+			sentinel_image_data["flag"] = 'sentinel' # stores flag of whether we have real or sentinel image
 			full_sentinel_image_data["flag"] = 'sentinel'
-			full_sentinel_image_data["coordinates"] = sentinel_codes_data[sentinel_image_path][1]
+			full_sentinel_image_data["coordinates"] = sentinel_codes_data[sentinel_image_path][1] # stores the coordinate of the valid code 
 			sf_data.insert(sentinel_indices[index], sentinel_image_data)
 			full_sf_data.insert(sentinel_indices[index], full_sentinel_image_data)
 
