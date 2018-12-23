@@ -20,7 +20,7 @@ sentinel_codecharts = os.listdir(sentinel_codechart_path)
 all_buckets = []
 img_count = 0
 num_buckets = 8
-num_subject_files = 1
+num_subject_files = 100
 num_images_per_sf = 20
 images_per_bucket = int(len(files)/num_buckets)
 for i in range(0, len(files), images_per_bucket): 
@@ -114,7 +114,7 @@ def index_jitter():
 for num in range(len(all_buckets)): 
 	bucket = all_buckets[num]
 	sentinel_bucket = all_sentinel_buckets[num]
-	bucket_name = 'bucket' + str(num)
+	bucket_name = 'bucket' + str(num+1)
 	# 1 bucket, 100 sf
 	for i in range(num_subject_files): 
 		random.shuffle(bucket)
