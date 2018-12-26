@@ -79,7 +79,7 @@ def create_codechart(img_count):
 			# writes triplet to image 
 			d.text((j_x, j_y), triplet_code, txt_color, font)
 			coordinates[triplet_code] = (j_x, j_y)
-	filename = 'codecharts' + str(img_count) + '.jpg'
+	filename = './codecharts' + str(img_count) + '.jpg'
 	# filename = 'codecharts/quick_test.jpg'
 	img.save(filename)
 	return (filename, list(valid_codes), coordinates)

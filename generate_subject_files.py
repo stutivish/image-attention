@@ -20,8 +20,10 @@ sentinel_codecharts = os.listdir(sentinel_codechart_path)
 all_buckets = []
 img_count = 0 # keeps track of the number of codecharts being produced 
 num_buckets = 8
-num_subject_files = 100 # 100 subject files/ bucket
-num_images_per_sf = 20 # 2o images/ subject file
+num_subject_files = 1 # 100 subject files/ bucket
+num_images_per_sf = 20 # 20 images/ subject file
+num_tutorials_per_sf = 3 # 3 tutorials/ subject file
+num_imgs_per_tutorial = 3 # 2 images/ tutorial 
 images_per_bucket = int(len(files)/num_buckets)
 for i in range(0, len(files), images_per_bucket): 
 	all_buckets.append(files[i:i+images_per_bucket])
@@ -108,9 +110,12 @@ for si in all_sentinel_images:
 with open('./sentinel_images/sentinel_codes.json') as f:
     sentinel_codes_data = json.load(f) # contains mapping of sentinel image path to (valid triplet code, coordinate of valid triplet code)
 
+with open('./tutorials/tutorial.json') as f:
+    tutorial_data = json.load(f) # contains mapping of sentinel image path to (valid triplet code, coordinate of valid triplet code)
+
 # Inserting sentinel images at "random" indices (~4-5 images apart) within the subject file 
 def index_jitter(): 
-	indices = [4, 10, 16, 21] # default to every 5 indices exactly 
+	indices = [4, 10, 16, 23] # default to every 5 indices exactly
 	for i in range(len(indices)): 
 		jitter = random.choice((-1, 1)) # adds jitter of a jitter away from ideal to add randomness
 		indices[i] = indices[i] + jitter
@@ -119,7 +124,7 @@ def index_jitter():
 
 ## GENERATING SUBJECT FILES 
 # iterate over all buckets 
-for num in range(len(all_buckets)): 
+for num in range(num_buckets): 
 	bucket = all_buckets[num]
 	sentinel_bucket = all_sentinel_buckets[num]
 	bucket_name = 'bucket' + str(num+1)
@@ -129,6 +134,25 @@ for num in range(len(all_buckets)):
 		# for each subject files, add 20 real images 
 		sf_data = []
 		full_sf_data = []
+
+		# ADDING TUTORIALS
+		# randomly choose 3 tutorials to include with each subject file
+		forbidden_numbers = set() 
+		for y in range(num_tutorials_per_sf): 
+			r = list(range(0, 9))
+			choice = random.choice(r)
+			while choice in forbidden_numbers:
+				choice = random.choice(r)
+			forbidden_numbers.add(choice)
+
+		for t in forbidden_numbers: 
+			for img in tutorial_data[t]: 
+				smaller_img_dict = img.copy()
+				del smaller_img_dict['coordinates']
+				sf_data.append(smaller_img_dict)
+				full_sf_data.append(img)
+
+		# ADDING REAL IMAGES 
 		for j in range(num_images_per_sf): 
 			img_count += 1
 			image_data = {}
@@ -161,13 +185,22 @@ for num in range(len(all_buckets)):
 			full_sentinel_image_data["image"] = sentinel_image_path
 			sentinel_image_data["codechart"] = sentinel_dict[sentinel_image_path] # stores codechart path 
 			full_sentinel_image_data["codechart"] = sentinel_dict[sentinel_image_path]
-			sentinel_image_data["codes"] = sentinel_codes_data[sentinel_image_path][0] # stores the valid code that must be entered for sentinel image
-			full_sentinel_image_data["codes"] = sentinel_codes_data[sentinel_image_path][0]
+			sentinel_image_data["correct_code"] = sentinel_codes_data[sentinel_image_path][0] # stores the valid code that must be entered for sentinel image
+			full_sentinel_image_data["correct_code"] = sentinel_codes_data[sentinel_image_path][0]
+			sentinel_image_data["valid_codes"] = sentinel_codes_data[sentinel_image_path][2]
+			full_sentinel_image_data["valid_codes"] = sentinel_codes_data[sentinel_image_path][2]
 			sentinel_image_data["flag"] = 'sentinel' # stores flag of whether we have real or sentinel image
 			full_sentinel_image_data["flag"] = 'sentinel'
 			full_sentinel_image_data["coordinates"] = sentinel_codes_data[sentinel_image_path][1] # stores the coordinate of the valid code 
 			sf_data.insert(sentinel_indices[index], sentinel_image_data)
 			full_sf_data.insert(sentinel_indices[index], full_sentinel_image_data)
+
+		# Add an image_id to each entry
+		image_id = 0 # represents the index of the image in the subject file 
+		for d in range(len(sf_data)): 
+			sf_data[d]['index'] = image_id+1 # NOT zero-indexed
+			full_sf_data[d]['index'] = image_id+1
+			image_id+=1
 
 		with open('./subject_files/' + bucket_name + '/subject_file_' + str(i+1) + '.json', 'w') as outfile: 
 			json.dump(sf_data, outfile)

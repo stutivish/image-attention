@@ -16,13 +16,15 @@ text_color = "white"
 font_type = "Arial.ttf"
 px_pt_ratio = 20/29 # according to our image dimensions, 29 point = 20 px
 font_size = 30 # in pixel - described in paper
+num_sentinel_images = 44
+num_buckets = 11 # last 3 buckets only used for tutorial 
 
 def pixel_to_point(num): 
 	return int(num*(1/px_pt_ratio))
 
 correct_code = {}
 img_count = 1
-for i in range(32):
+for i in range(num_sentinel_images):
 	# generate random code chart
 	filename, valid_codes, coordinates = generate_code.create_codechart('/sentinel/sentinel_code_chart_' + str(img_count))
 	# pick random code 
@@ -43,27 +45,20 @@ for i in range(32):
 	font = ImageFont.truetype(font_type, pixel_to_point(font_size)) # takes in point value
 	d.text(coordinate, '+', txt_color, font)
 
-	bucket = ''
-	if img_count>=1 and img_count<=4: 
-		bucket = 'bucket1'
-	elif img_count>=5 and img_count<=8: 
-		bucket = 'bucket2'
-	elif img_count>=9 and img_count<=12: 
-		bucket = 'bucket3'
-	elif img_count>=13 and img_count<=16: 
-		bucket = 'bucket4'
-	elif img_count>=17 and img_count<=20: 
-		bucket = 'bucket5'
-	elif img_count>=21 and img_count<=24: 
-		bucket = 'bucket6'
-	elif img_count>=25 and img_count<=28: 
-		bucket = 'bucket7'
-	elif img_count>=29 and img_count<=32: 
-		bucket = 'bucket8'
+	# Stores sentinel images into its correct bucket
+	bucket_count = 1
+	bucket_dict = {}
+	for num in range(0, num_sentinel_images, int(num_sentinel_images/num_buckets)): 
+		val = 'bucket' + str(bucket_count)
+		for x in range(int(num_sentinel_images/num_buckets)): 
+			bucket_dict[num+x+1] = val
+		bucket_count+=1 
+
+	bucket = bucket_dict[img_count]
 
 	filename = './sentinel_images/' + bucket + '/sentinel_image_' + str(img_count) + '.jpg'
 	img.save(filename)
-	correct_code[filename] = (triplet, coordinate)
+	correct_code[filename] = (triplet, coordinate, valid_codes)
 	img_count+=1
 
 with open('./sentinel_images/sentinel_codes.json', 'w') as outfile: 
